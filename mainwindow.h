@@ -16,21 +16,24 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 private:
-    struct dataRX_s{
-        uint8_t start_transsmision_byte;
-        uint16_t angle;
-        uint8_t end_transsmision_byte;
-    } __attribute__ ((__packed__));
+//    struct dataRX_s{
+//        uint8_t start_transsmision_byte;
+//        uint16_t angle;
+//        uint8_t end_transsmision_byte;
+//    } __attribute__ ((__packed__));
 
-    union frameRX_u{
-        uint8_t *bytesRX;
-        struct dataRX_s *values;
-    }frameRX;
+//    union frameRX_u{
+//        uint8_t *bytesRX;
+//        struct dataRX_s *values;
+//    }frameRX;
 
-    QTimer *repaint_timer;
+    QTimer *recieve_timer;
     QSerialPort *serial;
     QByteArray receivedData;
 
+    void addAvaibleSerials();
+    void prepareSerial();
+    void prepareData();
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
@@ -40,6 +43,8 @@ private slots:
     void on_pushButton_clicked();
     void update();
     void serialReceived();
+
+    void on_pushButton_2_pressed();
 
 private:
     Ui::MainWindow *ui;
