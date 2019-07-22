@@ -4,12 +4,23 @@
 #include <qdebug.h>
 
 #define DATA_FRAME_TX_SIZE 7
-#define DATA_FRAME_RX_SIZE 6
+#define DATA_FRAME_RX_SIZE 20
 
 #define START_CODE 0x40
 #define END_CODE 0x80
 
 #define TRACKING_INTERVAL 50
+
+struct dataRX{
+    uint16_t angle;
+    int16_t speed_pv;
+    int16_t sp;
+    int16_t e;
+    int16_t u;
+    int16_t dAngle;
+    uint32_t dt;
+    uint16_t fi;
+};
 
 struct dataFrameTX{
     uint8_t start_code;
@@ -21,8 +32,7 @@ struct dataFrameTX{
 
 struct dataFrameRX{
     uint8_t start_code;
-    uint16_t angle;
-    int16_t real_angle;
+    dataRX data;
     uint8_t end_code;
 } __attribute__ ((__packed__));
 
@@ -53,6 +63,15 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(recieve_timer, SIGNAL(timeout()), this, SLOT(serialReceived()));
     //repaint_timer->start();
 
+    for(int i =0; i < 2; i ++){
+        for(int j =0; j < 2; j ++){
+            QLabel *l = new QLabel();
+            //ui->gridLayout->addWidget(l, i, j);
+           // l->setPixmap(QPixmap("/home/rvbc-/Downloads/myAvatar.png"));
+        }
+    }
+
+
 
     //connect(serial,SIGNAL(readyRead()), this, SLOT(serialReceived()));
 }
@@ -63,9 +82,16 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::update(){
-    ui->label->setText(QString::number(frameRX.data.angle, 10));
-    ui->lcdNumber->display(double(frameRX.data.angle) / 2.0);
-    ui->lcdNumber_2->display(frameRX.data.real_angle);
+    //ui->label->setText(QString::number(frameRX.data.angle, 10));
+    ui->lcdNumber->display(frameRX.data.data.angle);
+    ui->lcdNumber_2->display(frameRX.data.data.speed_pv);
+    ui->lcdNumber_3->display(frameRX.data.data.sp);
+    ui->lcdNumber_4->display((int)frameRX.data.data.e);
+    ui->lcdNumber_5->display((int)frameRX.data.data.u);
+    ui->lcdNumber_6->display(frameRX.data.data.fi);
+    ui->lcdNumber_7->display(frameRX.data.data.dAngle);
+    ui->lcdNumber_8->display(uint16_t(frameRX.data.data.dt));
+    ui->label_9->setText(QString::number(frameRX.data.data.dt));
 }
 
 void MainWindow::on_pushButton_clicked()
@@ -110,10 +136,10 @@ void MainWindow::prepareData(){
 
 
 void MainWindow::serialReceived(){
-//    frameTX.data.torque = ui->spinBox->value();
-//    frameTX.data.angle = ui->spinBox_2->value();
-//    if(serial->isOpen())
-//        serial->write(frameTX.bytes, DATA_FRAME_TX_SIZE);
+    //    frameTX.data.torque = ui->spinBox->value();
+    //    frameTX.data.angle = ui->spinBox_2->value();
+    //    if(serial->isOpen())
+    //        serial->write(frameTX.bytes, DATA_FRAME_TX_SIZE);
 
 
     QByteArray ba = serial->readAll();
