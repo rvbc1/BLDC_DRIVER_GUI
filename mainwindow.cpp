@@ -59,15 +59,20 @@ MainWindow::MainWindow(QWidget *parent) :
 
     recieve_timer = new QTimer(this);
     recieve_timer->setInterval(100);
+    serial_updater_timer = new QTimer(this);
+    serial_updater_timer->setInterval(1000);
     connect(recieve_timer, SIGNAL(timeout()), this, SLOT(update()));
     connect(recieve_timer, SIGNAL(timeout()), this, SLOT(serialReceived()));
+    connect(serial_updater_timer, SIGNAL(timeout()), this, SLOT(updateAvaibleSerials()));
+
+    serial_updater_timer->start();
     //repaint_timer->start();
 
     for(int i =0; i < 2; i ++){
         for(int j =0; j < 2; j ++){
             QLabel *l = new QLabel();
             //ui->gridLayout->addWidget(l, i, j);
-           // l->setPixmap(QPixmap("/home/rvbc-/Downloads/myAvatar.png"));
+            // l->setPixmap(QPixmap("/home/rvbc-/Downloads/myAvatar.png"));
         }
     }
 
@@ -94,32 +99,66 @@ void MainWindow::update(){
     ui->label_9->setText(QString::number(frameRX.data.data.dt));
 }
 
-void MainWindow::on_pushButton_clicked()
-{
+
+
+void MainWindow::on_pushButton_clicked(){
+    if(serial->isOpen()){
+        closeSerial();
+    } else {
+        openSerial();
+    }
+}
+
+void MainWindow::updateAvaibleSerials(){
+    QString selected_serial = ui->comboBox->currentText();
+    ui->comboBox->clear();
+    addAvaibleSerials();
+    if(ui->comboBox->findText(selected_serial) != -1){
+        ui->comboBox->setCurrentIndex(ui->comboBox->findText(selected_serial));
+    }
+
+
+    if(serial->isOpen() && (ui->comboBox->findText(opened_serial) == -1)){
+        //serial->close();
+        closeSerial();
+        //void disconnect
+    }
+}
+
+void MainWindow::openSerial(){
     serial->close();
     if(ui->comboBox->count() > 0){
         serial->setPortName(ui->comboBox->currentText());
-        serial->open(QIODevice::ReadWrite);
-        //enableDataWidgets();
-        ui->progressBar->setTextVisible(true);
-        ui->progressBar->setValue(100);
-        recieve_timer->start();
+        if(serial->open(QIODevice::ReadWrite)){
+            opened_serial = ui->comboBox->currentText();
+            //enableDataWidgets();
+            ui->progressBar->setTextVisible(true);
+            ui->progressBar->setValue(100);
+            ui->pushButton->setText("Disconnect");
+            recieve_timer->start();
+        }
     } else {
 
     }
+}
 
+void MainWindow::closeSerial(){
+    serial->close();
+    ui->progressBar->setTextVisible(false);
+    ui->progressBar->setValue(0);
+    recieve_timer->stop();
+    ui->pushButton->setText("Connect");
 }
 
 void MainWindow::addAvaibleSerials(){
     QList<QSerialPortInfo> lista = QSerialPortInfo::availablePorts();
-
     for (int i = 0; i < lista.size(); i++){
         ui->comboBox->addItem(lista[i].portName());
     }
 }
 
 void MainWindow::prepareSerial(){
-    addAvaibleSerials();
+    updateAvaibleSerials();
     serial = new QSerialPort();
     serial->setBaudRate(QSerialPort::Baud115200);
     serial->setDataBits(QSerialPort::Data8);
@@ -136,37 +175,18 @@ void MainWindow::prepareData(){
 
 
 void MainWindow::serialReceived(){
-    //    frameTX.data.torque = ui->spinBox->value();
-    //    frameTX.data.angle = ui->spinBox_2->value();
-    //    if(serial->isOpen())
-    //        serial->write(frameTX.bytes, DATA_FRAME_TX_SIZE);
-
-
-    QByteArray ba = serial->readAll();
-    for(int i =0; i < ba.size() - DATA_FRAME_RX_SIZE; i++){
-        if((uint8_t(ba[i]) == START_CODE) && ((uint8_t(ba[i + DATA_FRAME_RX_SIZE - 1])) == END_CODE)){
-            for(int j = 0; j < DATA_FRAME_RX_SIZE; j++){
-                frameRX.bytes[j] = ba[i + j];
+    if(serial->isOpen()){
+        QByteArray ba = serial->readAll();
+        for(int i =0; i < ba.size() - DATA_FRAME_RX_SIZE; i++){
+            if((uint8_t(ba[i]) == START_CODE) && ((uint8_t(ba[i + DATA_FRAME_RX_SIZE - 1])) == END_CODE)){
+                for(int j = 0; j < DATA_FRAME_RX_SIZE; j++){
+                    frameRX.bytes[j] = ba[i + j];
+                }
+                //            ba.remove(i, DATA_FRAME_RX_SIZE);
+                //            qDebug() << ba.size() << "ok";
             }
-            //            ba.remove(i, DATA_FRAME_RX_SIZE);
-            //            qDebug() << ba.size() << "ok";
         }
     }
-
-    //    receivedData.append(serial->read(RX_FRAME_BYTES));
-
-    //    if(((uint8_t)(receivedData[receivedData.size()-1]) == 0x80) && (receivedData.size() >= 4)){
-    //        if((receivedData.size() == 4) && ((uint8_t)(receivedData[0]) == 0x40)){
-
-    //            for (int i = 0; i < receivedData.size(); i++) {
-    //                frameRX.bytes[i] = (uint8_t) receivedData[i];
-    //                //qDebug() << QString::number((uint8_t)datax[i], 10);
-    //            }
-
-    //        } else qDebug() << "Error!!!";
-
-    //        receivedData.clear();
-    //    }
 }
 
 void MainWindow::on_pushButton_2_pressed(){

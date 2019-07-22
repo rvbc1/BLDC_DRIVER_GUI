@@ -28,8 +28,14 @@ private:
 //    }frameRX;
 
     QTimer *recieve_timer;
+    QTimer *serial_updater_timer;
     QSerialPort *serial;
     QByteArray receivedData;
+
+    QString opened_serial;
+
+    void openSerial();
+    void closeSerial();
 
     void addAvaibleSerials();
     void prepareSerial();
@@ -40,6 +46,7 @@ public:
     ~MainWindow();
 
 private slots:
+    void updateAvaibleSerials();
     void on_pushButton_clicked();
     void update();
     void serialReceived();
